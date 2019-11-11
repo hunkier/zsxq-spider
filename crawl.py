@@ -10,9 +10,10 @@ from bs4 import BeautifulSoup
 from urllib.parse import quote
 from urllib.parse import unquote
 
-ZSXQ_ACCESS_TOKEN = '7364434F-6288-B1C8-9X23-611LB3575EF0' # 登录后Cookie中的Token
-GROUP_ID = '481818518558'                                  # 知识星球中的小组ID
-PDF_FILE_NAME = '电子书.pdf'                               # 生成PDF文件的名字
+ZSXQ_ACCESS_TOKEN = 'C64ABF85-741C-E769-E57D-5036D7CA4C7C' # 登录后Cookie中的Token
+GROUP_ID = '825821582152'                                  # 知识星球中的小组ID
+# GROUP_ID = '458145858418'                                  # 知识星球中的小组ID
+PDF_FILE_NAME = 'Effective Java(3rd).pdf'                               # 生成PDF文件的名字
 DOWLOAD_PICS = True                                        # 是否下载图片 True | False 下载会导致程序变慢
 DOWLOAD_COMMENTS = True                                    # 是否下载评论
 ONLY_DIGESTS = False                                       # True-只精华 | False-全部
@@ -41,17 +42,19 @@ html_template = """
 htmls = []
 num = 0
 
+
+
 def get_data(url):
 
     OVER_DATE_BREAK = False
 
     global htmls, num
-        
+
     headers = {
         'Cookie': 'zsxq_access_token=' + ZSXQ_ACCESS_TOKEN,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:65.0) Gecko/20100101 Firefox/65.0'
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36'
     }
-    
+
     rsp = requests.get(url, headers=headers)
     with open('temp.json', 'w', encoding='utf-8') as f: # 将返回数据写入temp.json方便查看
         f.write(json.dumps(rsp.json(), indent=2, ensure_ascii=False))
@@ -114,8 +117,18 @@ def get_data(url):
             if files:
                 files_content = '<i>文件列表(需访问网站下载) :<br>'
                 for f in files:
-                    files_content += f.get('name') + '<br>'
-                files_content += '</i>'
+                    file_name = f.get('name')
+                    files_content += file_name + '<br>'
+                    req_file_url = 'https://api.zsxq.com/v1.10/files/'+str(f.get('file_id'))+'/download_url'
+                    rsp_file = requests.get(req_file_url, headers=headers)
+                    file_json = rsp_file.json();
+                    print(file_json.get('succeeded'))
+                    if file_json.get('succeeded'):
+                        file_url = file_json.get('resp_data').get('download_url')
+                        print(file_url)
+                        local_url = './file/' + file_name
+                        urllib.request.urlretrieve(file_url, local_url)
+                files_content += '</i></br>'
                 soup = BeautifulSoup(html, 'html.parser')
                 files_tag = soup.new_tag('p')
                 soup_temp = BeautifulSoup(files_content, 'html.parser')
